@@ -17,16 +17,16 @@
 <script type="text/javascript">
 
 $( document ).ready(function() {
-  $('input#q').typeahead({
+  $('input#q2').typeahead({
     name: 'accounts',
     local: ['timtrueman', 'JakeHarding', 'vskarich']
   });
 
 });
 
-  $('input#q').on('typeahead:selected', function(evt, datum) {
-    console.log(evt);
-    console.log(datum);
+  $('input#q2').on('typeahead:selected', function(evt, datum) {
+    $(this).parent().siblings().last().after("<span>" + datum.value + "</span>");
+    $('input#q2').val("");
   });
 
 </script>
