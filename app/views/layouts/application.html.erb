@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>SearchPoc</title>
+  <%= stylesheet_link_tag    "application", :media => "all" %>
+  <%= javascript_include_tag "application" %>
+  <%= csrf_meta_tags %>
+</head>
+<body>
+
+  <%= yield %>
+
+</body>
+<script type="text/javascript" src='bower_components/jquery/jquery.js'></script>
+<script type="text/javascript" src='bower_components/typeahead.js/dist/typeahead.js'></script>
+
+<script type="text/javascript">
+
+$( document ).ready(function() {
+  $('input#q').typeahead({
+    name: 'accounts',
+    local: ['timtrueman', 'JakeHarding', 'vskarich']
+  });
+
+});
+
+  $('input#q').on('typeahead:selected', function(evt, datum) {
+    console.log(evt);
+    console.log(datum);
+  });
+
+</script>
+</html>
