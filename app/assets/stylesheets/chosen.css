@@ -428,3 +428,13 @@
   }
 }
 /* @end */
+
+/*Overrides*/
+
+.chosen-container, .chosen-choices {
+  overflow: visible;
+}
+
+.chosen-container-multi .chosen-choices {
+  overflow: visible;
+}

@@ -19,13 +19,13 @@
 $( document ).ready(function() {
   $('input#q2').typeahead({
     name: 'accounts',
-    local: ['timtrueman', 'JakeHarding', 'vskarich']
+    local: ['timtrueman', 'timtrueman2', 'timtrueman3', 'timtrueman4', 'JakeHarding', 'vskarich']
   });
 
 });
 
   $('input#q2').on('typeahead:selected', function(evt, datum) {
-    $(this).parent().siblings().last().after("<span>" + datum.value + "</span>");
+    $('.search-choice').last().after("<li class='search-choice'><span>" + datum.value + "</span></li>");
     $('input#q2').val("");
   });
 

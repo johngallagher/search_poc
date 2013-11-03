@@ -4,15 +4,15 @@
  * Copyright 2013 Twitter, Inc. and other contributors; Licensed MIT
  */
 
-var DropdownView = (function() {
+ var DropdownView = (function() {
   var html = {
-        suggestionsList: '<span class="tt-suggestions"></span>'
-      },
-      css = {
-        suggestionsList: { display: 'block' },
-        suggestion: { whiteSpace: 'nowrap', cursor: 'pointer' },
-        suggestionChild: { whiteSpace: 'normal' }
-      };
+    suggestionsList: '<span class="tt-suggestions"></span>'
+  },
+  css = {
+    suggestionsList: { display: 'block' },
+    suggestion: { whiteSpace: 'nowrap', cursor: 'pointer' },
+    suggestionChild: { whiteSpace: 'normal' }
+  };
 
   // constructor
   // -----------
@@ -108,11 +108,11 @@ var DropdownView = (function() {
 
     _ensureVisibility: function($el) {
       var menuHeight = this.$menu.height() +
-            parseInt(this.$menu.css('paddingTop'), 10) +
-            parseInt(this.$menu.css('paddingBottom'), 10),
-          menuScrollTop = this.$menu.scrollTop(),
-          elTop = $el.position().top,
-          elBottom = elTop + $el.outerHeight(true);
+      parseInt(this.$menu.css('paddingTop'), 10) +
+      parseInt(this.$menu.css('paddingBottom'), 10),
+      menuScrollTop = this.$menu.scrollTop(),
+      elTop = $el.position().top,
+      elBottom = elTop + $el.outerHeight(true);
 
       if (elTop < 0) {
         this.$menu.scrollTop(menuScrollTop + elTop);
@@ -171,7 +171,7 @@ var DropdownView = (function() {
 
     setLanguageDirection: function(dir) {
       var ltrCss = { left: '0', right: 'auto' },
-          rtlCss = { left: 'auto', right:' 0' };
+      rtlCss = { left: 'auto', right:' 0' };
 
       dir === 'ltr' ? this.$menu.css(ltrCss) : this.$menu.css(rtlCss);
     },
@@ -186,8 +186,8 @@ var DropdownView = (function() {
 
     getSuggestionUnderCursor: function() {
       var $suggestion = this._getSuggestions()
-          .filter('.tt-is-under-cursor')
-          .first();
+      .filter('.tt-is-under-cursor')
+      .first();
 
       return $suggestion.length > 0 ? extractSuggestion($suggestion) : null;
     },
@@ -200,13 +200,13 @@ var DropdownView = (function() {
 
     renderSuggestions: function(dataset, suggestions) {
       var datasetClassName = 'tt-dataset-' + dataset.name,
-          wrapper = '<div class="tt-suggestion">%body</div>',
-          compiledHtml,
-          $suggestionsList,
-          $dataset = this.$menu.find('.' + datasetClassName),
-          elBuilder,
-          fragment,
-          $el;
+      wrapper = '<div class="tt-suggestion">%body</div>',
+      compiledHtml,
+      $suggestionsList,
+      $dataset = this.$menu.find('.' + datasetClassName),
+      elBuilder,
+      fragment,
+      $el;
 
       // first time rendering suggestions for this dataset
       if ($dataset.length === 0) {
@@ -259,9 +259,9 @@ var DropdownView = (function() {
 
     clearSuggestions: function(datasetName) {
       var $datasets = datasetName ?
-            this.$menu.find('.tt-dataset-' + datasetName) :
-            this.$menu.find('[class^="tt-dataset-"]'),
-          $suggestions = $datasets.find('.tt-suggestions');
+      this.$menu.find('.tt-dataset-' + datasetName) :
+      this.$menu.find('[class^="tt-dataset-"]'),
+      $suggestions = $datasets.find('.tt-suggestions');
 
       $datasets.hide();
       $suggestions.empty();
@@ -273,7 +273,7 @@ var DropdownView = (function() {
     }
   });
 
-  return DropdownView;
+return DropdownView;
 
   // helper functions
   // ----------------
