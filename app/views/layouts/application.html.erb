@@ -60,6 +60,41 @@ function changeContent(name, localData) {
   });  
 }
 
+function sendAttributesSparql() {
+//   ?item school:typeOfEstablishment ?term . 
+// ?term rdfs:label ?label .
+  var queryUrl = "http://education.data.gov.uk/sparql/education/query?query=PREFIX+rdf%3A+%3Chttp%3A%2F%2Fwww.w3.org%2F1999%2F02%2F22-rdf-syntax-ns%23%3E%0D%0APREFIX+rdfs%3A+%3Chttp%3A%2F%2Fwww.w3.org%2F2000%2F01%2Frdf-schema%23%3E%0D%0APREFIX+school%3A+%3Chttp%3A%2F%2Feducation.data.gov.uk%2Fdef%2Fschool%2F%3E%0D%0ASELECT+DISTINCT+%3FtermLabel%0D%0AWHERE+%7B" + "%0D%0A%3F___establishmentStatus_1+rdfs%3Alabel+%22Open%22+." + "%0D%0A%3Fitem+school%3AestablishmentStatus+%3F___establishmentStatus_1+."
+
+  // Build the query string
+  $('.search-choice').each(function() { 
+    var prop = $(this).attr('data-property'); 
+    var val = $(this).attr('data-value'); 
+    queryUrl += "%0D%0A%3F___" + prop + "+rdfs%3Alabel+%22" + encodeURIComponent(val) + "%22+.";
+    queryUrl += "%0D%0A%3Fitem+school%3A" + prop + "+%3F___" + prop + "+.";
+  });
+
+  queryUrl += "%0D%0A%3Fitem+rdf%3Atype+school%3ASchool+.";
+
+  queryUrl += "%0D%0A%3Fitem+school%3AtypeOfEstablishment+%3Fterm+.";
+  queryUrl += "%0D%0A%3Fterm+rdfs%3Alabel+%3FtermLabel%0D+.%0A%7D++OFFSET+0+LIMIT+100%0D%0A&output=json&stylesheet=xml-to-html.xsl&force-accept=text%2Fplain";
+
+  $.ajax({
+    dataType: "jsonp",  
+    url: queryUrl,
+    success: function(data) {
+      var headerVars = data.head.vars; 
+
+      // grab the actual results from the data.                                          
+      var bindings = data.results.bindings;
+
+      attrs = $.map(bindings, function(item) { return { name: item.termLabel.value, value: "that are " + item.termLabel.value + "s" } })
+
+      changeContent('TypeOfEstablishment_TERM', attrs);
+    }
+  });
+
+}
+
 function sendSparql() {
 
   $("#results").children().first().prepend("<div>Please wait...</div>");
@@ -120,13 +155,13 @@ $('input#q2').on('typeahead:selected', function(evt, datum) {
   } else if (numberOfChoices == 1) {
 
     $('li.query').before("<li class='search-choice' data-property='districtAdministrative' data-value='" + datum.name + "'><span>" + datum.value + "</span></li>");
-    changeContent('TypeOfEstablishment_TERM', [{name: "Other Independent School", value: "that are independent schools (other)"}, "Voluntary Aided School", "Foundation School", "Community School", "Other Independent Special School", "Community Special School", "LA Nursery School", "Pupil Referral Unit", "City Technology College", "Voluntary Controlled School", "Independent School Approved for SEN Pupils", "Foundation Special School", "Miscellaneous", "Non-Maintained Special School", "Academies", "Legacy types", "Playing for Success Centres", "Further Education", "Institution funded by other Government Department", "Service Childrens Education", "Secure Units", "European Schools", "Offshore Schools", "Sixth Form Centres", "Special College", "Higher Education Institutions", "Welsh Establishment", "EY Setting"]);
 
     sendSparql();
+    sendAttributesSparql();
 
   } else if (numberOfChoices == 2) {
 
-    $('li.query').before("<li class='search-choice' data-property='TypeOfEstablishment_TERM' data-value='" + datum.name + "'><span>" + datum.value + "</span></li>");
+    $('li.query').before("<li class='search-choice' data-property='typeOfEstablishment' data-value='" + datum.name + "'><span>" + datum.value + "</span></li>");
     changeContent('nothing', []);
 
     sendSparql();

@@ -1,3 +1,4 @@
+
 /*!
  * typeahead.js 0.9.3
  * https://github.com/twitter/typeahead
@@ -706,6 +707,7 @@ var DropdownView = function() {
         this.isEmpty = true;
         this.isMouseOverDropdown = false;
         this.$menu = $(o.menu).on("mouseenter.tt", this._handleMouseenter).on("mouseleave.tt", this._handleMouseleave).on("click.tt", ".tt-suggestion", this._handleSelection).on("mouseover.tt", ".tt-suggestion", this._handleMouseover);
+
     }
     utils.mixin(DropdownView.prototype, EventTarget, {
         _handleMouseenter: function() {
@@ -1144,5 +1146,6 @@ function destroyDomStructure($node) {
             return methods.initialize.apply(this, arguments);
         }
     };
+
 })();
 })(window.jQuery);
