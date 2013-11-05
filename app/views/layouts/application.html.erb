@@ -12,13 +12,20 @@
 
 </body>
 <script type="text/javascript" src='bower_components/jquery/jquery.js'></script>
+<script type="text/javascript" src='chosen_v1.0.0/chosen.jquery.js'></script>
 <script type="text/javascript" src='bower_components/typeahead.js/dist/typeahead.js'></script>
 <script type="text/javascript" src='hogan-2.0.0.js'></script>
 
 <script type="text/javascript">
 
+
+
+
+
+
 $( document ).ready(function() {
-  changeContent('school:phaseOfEducation', [{ name: "Primary", value: "Primary schools"}, { name: "Secondary", value: "Secondary schools"}]);
+  $('#query').chosen({ no_results_text: "Oops, nothing found!" });
+  // changeContent('school:phaseOfEducation', [{ name: "Primary", value: "Primary schools"}, { name: "Secondary", value: "Secondary schools"}]);
 });
 
 function getTableHeaders(headerVars) {

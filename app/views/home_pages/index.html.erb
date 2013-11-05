@@ -1,10 +1,5 @@
 <h1>Search POC</h1>
 
-<span class="chosen-container chosen-container-multi chosen-container-active" style="width: 100%;" title="">
-  <ul class="chosen-choices">
-    <li class="query"><input id="q2" name="q2" type="text" value="" autocomplete="off" spellcheck="false"></li>
-  </ul>
-
-</span>
+<%= select_tag "query", grouped_options_for_select([['Types', ["Primary", "Secondary"]]]), multiple: true, style: { width: '100%' } %>
 
 <div id="results"></div>
