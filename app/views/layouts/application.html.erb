@@ -13,202 +13,81 @@
 </body>
 <script type="text/javascript" src='bower_components/jquery/jquery.js'></script>
 <script type="text/javascript" src='chosen_v1.0.0/chosen.jquery.js'></script>
-<script type="text/javascript" src='bower_components/typeahead.js/dist/typeahead.js'></script>
+<script type="text/javascript" src='node_modules/backbone/node_modules/underscore/underscore.js'></script>
+<script type="text/javascript" src='node_modules/backbone/backbone.js'></script>
+<script type="text/javascript" src='node_modules/backbone.localstorage/backbone.localstorage.js'></script>
 <script type="text/javascript" src='hogan-2.0.0.js'></script>
 
 <script type="text/javascript">
 
-
-
-
-
-
 $( document ).ready(function() {
-  $('#query').chosen({ no_results_text: "Oops, nothing found!" });
-  changeContent('phaseOfEducation', ["Primary", "Secondary"]);
-});
+  $('#query').chosen();
 
-function getTableHeaders(headerVars) {
-  var trHeaders = $("<tr></tr>");
-  for(var i in headerVars) {
-    trHeaders.append( $("<th>" + headerVars[i] + "</th>") );
-  }
-  return trHeaders;
-}
+  var Condition = Backbone.Model.extend({
 
-function getTableRow(headerVars, rowData) {
-  var tr = $("<tr></tr>");
-  for(var i in headerVars) {
-    tr.append(getTableCell(headerVars[i], rowData));
-  }
-  return tr;
-}
+    // Default attributes
+    defaults: function() {
+      return {
+        type: "Type",
+        text: "Search Term",
+        selected: false
+      };
+    },
 
-function getTableCell(fieldName, rowData) {
-  var td = $("<td></td>");
-  var fieldData = rowData[fieldName];
-  td.html(fieldData["value"]);
-  return td;
-}
-
-function removeUnselectedChoices() {
-  var selectedChoices = $.map($('.chosen-choices .search-choice span'), function(item) { return $(item).text() })
-  $('#query option').each(function (index, item) { 
-    var thisOption = $(item).text();
-    if ($.inArray(thisOption, selectedChoices) == -1) { 
-      $(item).remove();
-    } 
-  });
-}
-
-function changeContent(name, newData) {
-  removeUnselectedChoices();
-
-  // Add in choices from new data
-  var optionsHtml = "<optgroup label='" + name + "'>";
-  for(newDataIndex in newData) {
-    optionsHtml += "<option value='" + newData[newDataIndex] + "'>" + newData[newDataIndex] + "</option>";
-  }
-  optionsHtml += "</optgroup>";
-
-  $('#query').children().last().after(optionsHtml);
-
-  $('#query').trigger("chosen:updated");
-}
-
-function getAttributesSparql() {
-//   ?item school:typeOfEstablishment ?term . 
-// ?term rdfs:label ?label .
-  var queryUrl = "http://education.data.gov.uk/sparql/education/query?query=PREFIX+rdf%3A+%3Chttp%3A%2F%2Fwww.w3.org%2F1999%2F02%2F22-rdf-syntax-ns%23%3E%0D%0APREFIX+rdfs%3A+%3Chttp%3A%2F%2Fwww.w3.org%2F2000%2F01%2Frdf-schema%23%3E%0D%0APREFIX+school%3A+%3Chttp%3A%2F%2Feducation.data.gov.uk%2Fdef%2Fschool%2F%3E%0D%0ASELECT+DISTINCT+%3FtermLabel%0D%0AWHERE+%7B" + "%0D%0A%3F___establishmentStatus_1+rdfs%3Alabel+%22Open%22+." + "%0D%0A%3Fitem+school%3AestablishmentStatus+%3F___establishmentStatus_1+."
-
-  // Build the query string
-  $('.search-choice').each(function() { 
-    var prop = $(this).attr('data-property'); 
-    var val = $(this).attr('data-value'); 
-    queryUrl += "%0D%0A%3F___" + prop + "+rdfs%3Alabel+%22" + encodeURIComponent(val) + "%22+.";
-    queryUrl += "%0D%0A%3Fitem+school%3A" + prop + "+%3F___" + prop + "+.";
-  });
-
-  queryUrl += "%0D%0A%3Fitem+rdf%3Atype+school%3ASchool+.";
-
-  queryUrl += "%0D%0A%3Fitem+school%3AtypeOfEstablishment+%3Fterm+.";
-  queryUrl += "%0D%0A%3Fterm+rdfs%3Alabel+%3FtermLabel%0D+.%0A%7D++OFFSET+0+LIMIT+100%0D%0A&output=json&stylesheet=xml-to-html.xsl&force-accept=text%2Fplain";
-
-  $.ajax({
-    dataType: "jsonp",  
-    url: queryUrl,
-    success: function(data) {
-      var headerVars = data.head.vars; 
-
-      // grab the actual results from the data.                                          
-      var bindings = data.results.bindings;
-
-      attrs = $.map(bindings, function(item) { return item.termLabel.value })
-
-      changeContent('typeOfEstablishment_TERM', attrs);
+    select: function() {
+      this.save({selected: true});
     }
   });
 
-}
+  var ConditionList = Backbone.Collection.extend({
 
-function sendSparql() {
+    // Reference to this collection's model.
+    model: Condition,
 
-  $("#results").children().first().prepend("<div>Please wait...</div>");
-  // Update the query results
-  var queryUrl = "http://education.data.gov.uk/sparql/education/query?query=PREFIX+rdf%3A+%3Chttp%3A%2F%2Fwww.w3.org%2F1999%2F02%2F22-rdf-syntax-ns%23%3E%0D%0APREFIX+rdfs%3A+%3Chttp%3A%2F%2Fwww.w3.org%2F2000%2F01%2Frdf-schema%23%3E%0D%0APREFIX+school%3A+%3Chttp%3A%2F%2Feducation.data.gov.uk%2Fdef%2Fschool%2F%3E%0D%0ASELECT+%3Fname+%3Fitem%0D%0AWHERE+%7B" + "%0D%0A%3F___establishmentStatus_1+rdfs%3Alabel+%22Open%22+." + "%0D%0A%3Fitem+school%3AestablishmentStatus+%3F___establishmentStatus_1+."
+    // Save all of the todo items under the `"todos-backbone"` namespace.
+    localStorage: new Backbone.LocalStorage("conditions-backbone"),
 
-  // Build the query string
-  $('.search-choice').each(function() { 
-    var prop = $(this).attr('data-property'); 
-    var val = $(this).attr('data-value'); 
-    queryUrl += "%0D%0A%3F___" + prop + "+rdfs%3Alabel+%22" + encodeURIComponent(val) + "%22+.";
-    queryUrl += "%0D%0A%3Fitem+school%3A" + prop + "+%3F___" + prop + "+.";
-  });
+    unselected: function() {
+      return this.where({selected: false});
+    },
+    
+    selected: function() {
+      return this.where({selected: true});
+    },
 
-  queryUrl += "%0D%0A%3Fitem+rdf%3Atype+school%3ASchool+.";
-  queryUrl += "%0D%0A%3Fitem+rdfs%3Alabel+%3Fname%0D%0A%7D++OFFSET+0+LIMIT+100%0D%0A&output=json&stylesheet=xml-to-html.xsl&force-accept=text%2Fplain";
 
-  // Run the query and update the table
-  $.ajax({
-    dataType: "jsonp",  
-    url: queryUrl,
-    success: function(data) {
-      $("#results").children().remove();
-      // get the table element
-      var table = $("#results");              
+    nextConditionType: function() {
+      if (this.selected.length == 0) {
+        return "phase";
 
-      // get the sparql variables from the 'head' of the data.
-      var headerVars = data.head.vars; 
+      } else if (this.selected.length == 1) {
+        return "district";
 
-      // using the vars, make some table headers and add them to the table;
-      var trHeaders = getTableHeaders(headerVars);
-      table.append(trHeaders);  
+      } else {
+        return "term";
+      }
+    },
 
-      // grab the actual results from the data.                                          
-      var bindings = data.results.bindings;
-
-      // for each result, make a table row and add it to the table.
-      for(rowIdx in bindings){
-        table.append(getTableRow(headerVars, bindings[rowIdx]));
-      } 
+    selectConditionWithText: function(text) {
+      var conditionWithText = this.where({text: text})[0];
+      conditionWithText.select();
     }
+
   });
 
-}
+  var Conditions = new ConditionList;
 
-$('#query').on('change', function(evt, params) {
+  $('#query').on('change', function(evt, params) {
+    Conditions.selectConditionWithText(params.selected);
 
-  // Add the selected choice to the tokens
-  var numberOfChoices = $('.chosen-choices .search-choice').size();
-  if (numberOfChoices == 0) {
-
-    // changeContent('phaseOfEducation', ["Primary", "Secondary"]);
-    // sendSparql();
-
-  } else if (numberOfChoices == 1) {
-
-    changeContent('districtAdministrative', ["Southwark", "Lambeth", "Westminster", "Kensington and Chelsea", "Wandsworth", "Milton Keynes", "Thanet", "Barking and Dagenham", "Barnet", "Lewisham", "Bromley", "Greenwich", "Tower Hamlets", "Lewes", "Bexley", "Brent", "Enfield", "Birmingham", "Waltham Forest", "Coventry", "Solihull", "Stratford-on-Avon", "Bromsgrove", "Wirral", "St. Helens", "Liverpool", "Knowsley", "Wolverhampton", "South Staffordshire", "Sefton", "Telford and Wrekin", "Bolton", "Bury", "Salford", "Manchester", "Oldham", "Macclesfield", "Congleton", "Chorley", "Rochdale", "Stockport", "High Peak", "Trafford", "Tameside", "Wigan", "Barnsley", "Doncaster", "Rotherham", "Sheffield", "Bradford", "Leeds", "Harrogate", "Calderdale", "Kirklees", "North Tyneside", "North Somerset", "Bath and North East Somerset", "South Gloucestershire", "Bristol, City of", "Isles of Scilly", "Mid Bedfordshire", "Sunderland", "South Tyneside", "Newcastle upon Tyne", "Luton", "Bedford", "West Somerset", "Broxtowe", "Thurrock", "Sedgefield", "South Bedfordshire", "Reading", "Windsor and Maidenhead", "West Berkshire", "Wokingham", "Slough", "Bracknell Forest", "Merton", "South Somerset", "Aylesbury Vale", "South Bucks", "Chiltern", "Wycombe", "Fenland", "Peterborough", "Huntingdonshire", "South Cambridgeshire", "Cambridge", "East Cambridgeshire", "Chester", "Ellesmere Port & Neston", "Halton", "Vale Royal", "Warrington", "Crewe and Nantwich", "King's Lynn and West Norfolk", "Redcar and Cleveland", "Carrick", "Kerrier", "Penwith", "Stockton-on-Tees", "Hartlepool", "Middlesbrough", "Allerdale", "South Lakeland", "Barrow-in-Furness", "Carlisle", "Copeland", "Eden", "Derbyshire Dales", "Derby", "Amber Valley", "Bolsover", "North East Derbyshire", "Erewash", "Chesterfield", "South Derbyshire", "Derwentside", "Easington", "Wear Valley", "Darlington", "Durham", "Teesdale", "Chester-le-Street", "North Dorset", "Poole", "Bournemouth", "Weymouth and Portland", "West Dorset", "East Dorset", "Purbeck", "Christchurch", "Wealden", "Brighton and Hove", "Rother", "Hastings", "Eastbourne", "Braintree", "Colchester", "Tendring", "Southend-on-Sea", "Harlow", "Chelmsford", "Rochford", "Uttlesford", "Maldon", "Epping Forest", "Castle Point", "Basildon", "Brentwood", "Forest of Dean", "Cotswold", "Tewkesbury", "Gloucester", "Stroud", "Cheltenham", "Portsmouth", "Gosport", "Southampton", "Basingstoke and Deane", "East Hampshire", "Rushmoor", "Test Valley", "Eastleigh", "Havant", "New Forest", "Fareham", "Winchester", "Hart", "Malvern Hills", "Wyre Forest", "Worcester", "Herefordshire, County of", "Wychavon", "Redditch", "Kingston upon Hull, City of", "East Hertfordshire", "East Riding of Yorkshire", "Hillingdon", "Burnley", "North Lincolnshire", "North East Lincolnshire", "Hertsmere", "Stevenage", "North Hertfordshire", "St Albans", "Dacorum", "Three Rivers", "Welwyn Hatfield", "Watford", "Broxbourne", "Gravesham", "Ashford", "Medway", "Dover", "Canterbury", "Swale", "Tonbridge and Malling", "Tunbridge Wells", "Dartford", "Sevenoaks", "Maidstone", "Shepway", "Hyndburn", "Lancaster", "Pendle", "West Lancashire", "Preston", "Blackburn with Darwen", "Rossendale", "Wyre", "Fylde", "South Ribble", "Blackpool", "Ribble Valley", "Leicester", "Blaby", "Melton", "North West Leicestershire", "Harborough", "Charnwood", "Hinckley and Bosworth", "Oadby and Wigston", "Rutland", "South Kesteven", "Lincoln", "East Lindsey", "Boston", "North Kesteven", "South Holland", "West Lindsey", "Broadland", "Norwich", "Great Yarmouth", "Breckland", "North Norfolk", "South Norfolk", "Scarborough", "Hambleton", "Ryedale", "York", "Selby", "Craven", "Richmondshire", "Kettering", "Wellingborough", "Northampton", "Hackney", "Daventry", "South Northamptonshire", "East Northamptonshire", "Corby", "Nottingham", "Bassetlaw", "Ashfield", "Mansfield", "Gedling", "Newark and Sherwood", "Rushcliffe", "Oxford", "Vale of White Horse", "West Oxfordshire", "Cherwell", "South Oxfordshire", "North Shropshire", "South Shropshire", "Shrewsbury and Atcham", "Bridgnorth", "Oswestry", "Sedgemoor", "Mendip", "Taunton Deane", "Stoke-on-Trent", "Cannock Chase", "Newcastle-under-Lyme", "Nuneaton and Bedworth", "Croydon", "East Staffordshire", "Lichfield", "Staffordshire Moorlands", "Stafford", "Tamworth", "Ipswich", "Woking", "Waverley", "Elmbridge", "Runnymede", "Reigate and Banstead", "Mole Valley", "Guildford", "Epsom and Ewell", "Spelthorne", "Tandridge", "Surrey Heath", "Sutton", "Mid Suffolk", "Babergh", "Waveney", "St Edmundsbury", "Suffolk Coastal", "Forest Heath", "Mid Sussex", "Horsham", "Chichester", "Adur", "Worthing", "Arun", "Crawley", "Salisbury", "North Wiltshire", "Kennet", "West Wiltshire", "Swindon", "Camden", "Hammersmith and Fulham", "Redbridge", "Islington", "Ealing", "Haringey", "Havering", "Hounslow", "Newham", "Richmond upon Thames", "Dudley", "Sandwell", "Walsall", "Denbighshire", "Sir Ddinbych", "Tynedale", "Gateshead", "Wakefield", "Castle Morpeth", "Wansbeck", "Isle of Wight", "Plymouth", "Torbay", "Exeter", "Restormel", "Harrow", "Rugby", "North Warwickshire", "Warwick", "Kingston upon Thames", "Monmouthshire", "Sir Fynwy", "Berwick-upon-Tweed", "East Devon", "Torridge", "Fife", "Perth & Kinross", "Dumfries & Galloway", "Blyth Valley", "Teignbridge", "Caradon", "Edinburgh, City of", "Cardiff", "Caerdydd", "South Hams", "North Devon", "North Cornwall", "City of London", "Wrexham", "Wrecsam", "Falkirk", "Rhondda, Cynon, Taff", "Rhondda Cynon Taf", "Merthyr Tydfil", "Merthyr Tudful", "Caerphilly", "Caerffili", "Ynys M\u201Cn", "Isle of Anglesey", "Gwynedd", "Conwy", "Flintshire", "Sir y Fflint", "Powys", "Ceredigion", "Sir Ceredigion", "Sir Benfro", "Pembrokeshire", "Carmarthenshire", "Sir Gaerfyrddin", "Swansea", "Abertawe", "Neath Port Talbot", "Castell-nedd Port Talbot", "Bridgend", "Pen-y-bont ar Ogwr", "The Vale of Glamorgan", "Bro Morgannwg", "Alnwick", "Mid Devon", "West Devon", "West Lothian", "Newport", "Casnewydd", "Torfaen", "Tor-faen", "Blaenau Gwent", "Aberdeen City"]);
-
-    // $('li.query').before("<li class='search-choice' data-property='districtAdministrative' data-value='" + datum.name + "'><span>" + datum.value + "</span></li>");
-
-    // sendSparql();
-
-  } else if (numberOfChoices == 2) {
-
-    // $('li.query').before("<li class='search-choice' data-property='typeOfEstablishment' data-value='" + datum.name + "'><span>" + datum.value + "</span></li>");
-    // changeContent('nothing', []);
-
-    getAttributesSparql();
-    // sendSparql();
-  }
+    Conditions.remove(Conditions.unselected());
 
 
-  // Update the query results
-  // var queryUrl = "http://education.data.gov.uk/sparql/education/query?query=PREFIX+rdf%3A+%3Chttp%3A%2F%2Fwww.w3.org%2F1999%2F02%2F22-rdf-syntax-ns%23%3E%0D%0APREFIX+rdfs%3A+%3Chttp%3A%2F%2Fwww.w3.org%2F2000%2F01%2Frdf-schema%23%3E%0D%0APREFIX+school%3A+%3Chttp%3A%2F%2Feducation.data.gov.uk%2Fdef%2Fschool%2F%3E%0D%0ASELECT+%3Fname+%3Fitem%0D%0AWHERE+%7B%0D%0A%3F___establishmentStatus_1+rdfs%3Alabel+%22Open%22+.%0D%0A%3F___phaseOfEducation_2+rdfs%3Alabel+%22Primary%22+.%0D%0A%3Fitem+school%3AdistrictAdministrative+%3F___districtAdministrative_0+.%0D%0A%3Fitem+school%3AestablishmentStatus+%3F___establishmentStatus_1+.%0D%0A%3Fitem+school%3AphaseOfEducation+%3F___phaseOfEducation_2+.%0D%0A%3Fitem+rdf%3Atype+school%3ASchool+.%0D%0A%3Fitem+rdfs%3Alabel+%3Fname%0D%0A%7D++OFFSET+0+LIMIT+10%0D%0A&output=json&stylesheet=xml-to-html.xsl&force-accept=text%2Fplain"
+  });
 
-  // $.ajax({
-  //   dataType: "jsonp",  
-  //   url: queryUrl,
-  //   success: function(data) {
-  //     // get the table element
-  //     var table = $("#results");              
+  Conditions.create({type: "phase", text: "Primary"});
+  Conditions.create({type: "phase", text: "Secondary"});
 
-  //     // get the sparql variables from the 'head' of the data.
-  //     var headerVars = data.head.vars; 
-
-  //     // using the vars, make some table headers and add them to the table;
-  //     var trHeaders = getTableHeaders(headerVars);
-  //     table.append(trHeaders);  
-
-  //     // grab the actual results from the data.                                          
-  //     var bindings = data.results.bindings;
-
-  //     // for each result, make a table row and add it to the table.
-  //     for(rowIdx in bindings){
-  //       table.append(getTableRow(headerVars, bindings[rowIdx]));
-  //     } 
-  //   }
-  // });
 });
 
 
