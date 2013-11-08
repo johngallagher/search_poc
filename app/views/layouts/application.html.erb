@@ -21,14 +21,11 @@
 <script type="text/javascript">
 
 $( document ).ready(function() {
-  $('#query').chosen();
 
   var Condition = Backbone.Model.extend({
-
-    // Default attributes
     defaults: function() {
       return {
-        type: "Type",
+        group: null,
         text: "Search Term",
         selected: false
       };
@@ -39,28 +36,32 @@ $( document ).ready(function() {
     }
   });
 
-  var ConditionList = Backbone.Collection.extend({
-
-    // Reference to this collection's model.
+  var Conditions = Backbone.Collection.extend({
     model: Condition,
-
-    // Save all of the todo items under the `"todos-backbone"` namespace.
     localStorage: new Backbone.LocalStorage("conditions-backbone"),
 
-    unselected: function() {
-      return this.where({selected: false});
-    },
-    
-    selected: function() {
-      return this.where({selected: true});
-    },
+    initialize: function(models, options) {
+      this.group = options.group;
+    }
+  });
 
+  var ConditionGroup = Backbone.Model.extend({
+    // constructor: function() {
+    //   this.conditions = new Conditions(null, {group: this});
+    //   this.conditions.on('change', this.save, this);
+    //   Backbone.Model.apply(this, arguments);
+    // }
+  });
+
+  var ConditionGroupList = Backbone.Collection.extend({
+    model: ConditionGroup,
+    localStorage: new Backbone.LocalStorage("conditiongroups-backbone"),
 
     nextConditionType: function() {
-      if (this.selected.length == 0) {
+      if (this.length == 0) {
         return "phase";
 
-      } else if (this.selected.length == 1) {
+      } else if (this.length == 1) {
         return "district";
 
       } else {
@@ -69,24 +70,61 @@ $( document ).ready(function() {
     },
 
     selectConditionWithText: function(text) {
-      var conditionWithText = this.where({text: text})[0];
+      var lastGroup = this.last();
+      var conditionWithText = lastGroup.conditions.findWhere({text: text});
       conditionWithText.select();
     }
-
   });
 
-  var Conditions = new ConditionList;
+  var ConditionView = Backbone.View.extend({
+    tagName: "option",
+
+    render: function() {
+      return this.$el.html("This is a test...");
+    },
+  });
+
+  var AppView = Backbone.View.extend({
+    el: $("body"),
+
+    initialize: function() {
+      // this.listenTo(ConditionGroups, 'add', this.addOne);
+    },
+
+    addOne: function(condition) {
+      console.log("Added one!");
+      var view = new ConditionView({model: condition});
+      this.$("#query option").append(view.render());
+    }
+  });
+
+  var App = new AppView;
+
+  window.allGroups = new ConditionGroupList;
+
+
+  window.phaseOfEducation = allGroups.create({
+    name: "Phase"
+  });
+
+  window.phaseConditions = new Conditions(null, {group: window.phaseOfEducation});
+  phaseConditions.create({text: "Primary"});
+  phaseConditions.create({text: "Secondary"});
+
+  window.phaseOfEducation.conditions = window.phaseConditions;
+
+
+  $('#query').chosen();
 
   $('#query').on('change', function(evt, params) {
-    Conditions.selectConditionWithText(params.selected);
+    console.log("Chosen changed...");
+    allGroups.selectConditionWithText(params.selected);
 
-    Conditions.remove(Conditions.unselected());
-
+    // Conditions.remove(Conditions.unselected());
 
   });
 
-  Conditions.create({type: "phase", text: "Primary"});
-  Conditions.create({type: "phase", text: "Secondary"});
+
 
 });
 
