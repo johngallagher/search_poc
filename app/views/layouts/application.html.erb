@@ -38,32 +38,38 @@ $( document ).ready(function() {
     }
   });
 
+  app.ConditionView = Backbone.View.extend({
+    tagName: "option",
+
+    render: function() {
+      this.$el.attr("value", this.model.get('text'));
+      this.$el.html(this.model.get('text'));
+      return this;
+    },
+  });
+
   app.Conditions = Backbone.Collection.extend({
     model: app.Condition,
     localStorage: new Backbone.LocalStorage("conditions-backbone"),
   });
 
-  app.ConditionView = Backbone.View.extend({
-    tagName: "option",
-
-    initialize: function() {
-      this.listenTo(this.collection, "add", this.render);
+  app.ConditionsView = Backbone.View.extend({
+    addOne: function (condition) {
+      var view = new app.ConditionView({ model: condition });
+      $('#query optgroup').append(view.render().el);
     },
-
     render: function() {
-      this.$el.attr("value", "Southwark");
-      this.$el.html("Southwark");
       return this;
     },
   });
 
-  conditions = new app.Conditions
-  
-  conditionsView = new app.ConditionView({collection: conditions});
 
-  conditions.create({text: "Anything"});
-  $('#query optgroup').append(conditionsView.render().el);
+  conditions = new app.Conditions;
+  conditionsView = new app.ConditionsView;
+  conditionsView.listenTo(conditions, 'add', conditionsView.addOne);
 
+  conditions.create({text: "Wow"});
+  conditions.create({text: "Hey"});
 
   $('#query').chosen();
 
