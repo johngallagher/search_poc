@@ -27,6 +27,7 @@
 <script type="text/javascript" src='node_modules/backbone/node_modules/underscore/underscore.js'></script>
 <script type="text/javascript" src='node_modules/backbone/backbone.js'></script>
 <script type="text/javascript" src='node_modules/backbone.localstorage/backbone.localstorage.js'></script>
+<script type="text/javascript" src='node_modules/url-template/lib/url-template.js'></script>
 
 <script type="text/template" id="condition-group-template">
 <% _.each( groups, function( thisGroup){  %>
@@ -172,21 +173,27 @@ app.SelectedConditionsGroupView = Backbone.View.extend({
     $('#query').trigger('chosen:updated');
   });
 
-  base_url = 'http://education.data.gov.uk/sparql/education/query?query=';
-  
-  prefixes = 'PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> PREFIX school: <http://education.data.gov.uk/def/school/>';
-  sparql = prefixes 
-  + ' SELECT ?name ?item' 
-  + ' WHERE { ?item rdf:type school:School . ?item rdfs:label ?name .' 
-  + ' ?___phaseOfEducation_2 rdfs:label "Primary" . ?item school:phaseOfEducation ?___phaseOfEducation_2 .' 
-  + ' } OFFSET 0 LIMIT 10';
-  encodedSparql = encodeURIComponent(sparql);
+  var paramTemplate = urltemplate.parse(' ?___{key} rdfs:label "{value}" . ?item {namespace}:{key} ?___{key} .');
 
-  formatParameters = '&output=json&stylesheet=xml-to-html.xsl&force-accept=text%2Fplain';
+  prefixes = 'PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> PREFIX school: <http://education.data.gov.uk/def/school/>';
+  select = ' SELECT ?name ?item';
+  where  = ' WHERE { ?item rdf:type school:School . ?item rdfs:label ?name .';
+  limit  = ' } OFFSET 0 LIMIT 10';
+
+  base_url = 'http://education.data.gov.uk/sparql/education/query?query=';
+
+  encodedPrefixes = encodeURIComponent(prefixes)
+  encodedSelect   = encodeURIComponent(select)
+  encodedWhere    = encodeURIComponent(where);
+  encodedLimit    = encodeURIComponent(limit);
+  encodedPhase    = paramTemplate.expand({key: "phaseOfEducation", namespace: "school", value: "Primary"});
+  encodedFormat   = '&output=json&stylesheet=xml-to-html.xsl&force-accept=text%2Fplain';
+
+  url = base_url + encodedPrefixes + encodedSelect + encodedWhere + encodedPhase + encodedLimit + encodedFormat,
 
   $.ajax({
     dataType: "jsonp",
-    url: base_url + encodedSparql + formatParameters,
+    url: url,
     success: function(data) {    
       var bindings = data.results.bindings;
       for(rowIdx in bindings){
