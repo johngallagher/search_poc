@@ -113,36 +113,36 @@ $( document ).ready(function() {
     },
   });
 
-  app.Conditions = new ConditionList();
+app.Conditions = new ConditionList();
 
-  app.ConditionGroupView = Backbone.View.extend({
-    template: _.template($("#condition-group-template").html()),
+app.ConditionGroupView = Backbone.View.extend({
+  template: _.template($("#condition-group-template").html()),
 
-    initialize: function () {
-      this.listenTo(app.Conditions, 'add', this.add);
-    },
+  initialize: function () {
+    this.listenTo(app.Conditions, 'add', this.add);
+  },
 
-    add: function(condition) {
-      condition.save();
-    },
+  add: function(condition) {
+    condition.save();
+  },
 
-    render: function() {
-      var selectable = app.Conditions.selectable();
-      var groups = _.groupBy(selectable, function(object) { return object.get('group') });
-      this.el = this.template({groups: groups});
-      $('#query').children().remove();
-      $('#query').append(this.el);
-      return this;
-    },
-  });
+  render: function() {
+    var selectable = app.Conditions.selectable();
+    var groups = _.groupBy(selectable, function(object) { return object.get('group') });
+    this.el = this.template({groups: groups});
+    $('#query').children().remove();
+    $('#query').append(this.el);
+    return this;
+  },
+});
 
-  app.SelectedConditionsGroupView = Backbone.View.extend({
-    template: _.template($("#selected-conditions-template").html()),
-    render: function() {
-      selectedConditions = app.Conditions.where({selected: true});
-      $('#results').html(this.template({conditions: selectedConditions}));
-    },
-  });
+app.SelectedConditionsGroupView = Backbone.View.extend({
+  template: _.template($("#selected-conditions-template").html()),
+  render: function() {
+    selectedConditions = app.Conditions.where({selected: true});
+    $('#results').html(this.template({conditions: selectedConditions}));
+  },
+});
 
   app.conditionsGroupView = new app.ConditionGroupView(); // Start the conditions view
   app.selectedConditionsView = new app.SelectedConditionsGroupView();
@@ -170,8 +170,31 @@ $( document ).ready(function() {
     app.conditionsGroupView.render();
     app.selectedConditionsView.render();
     $('#query').trigger('chosen:updated');
-
   });
+
+  base_url = 'http://education.data.gov.uk/sparql/education/query?query=';
+  
+  prefixes = 'PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> PREFIX school: <http://education.data.gov.uk/def/school/>';
+  sparql = prefixes 
+  + ' SELECT ?name ?item' 
+  + ' WHERE { ?item rdf:type school:School . ?item rdfs:label ?name .' 
+  + ' ?___phaseOfEducation_2 rdfs:label "Primary" . ?item school:phaseOfEducation ?___phaseOfEducation_2 .' 
+  + ' } OFFSET 0 LIMIT 10';
+  encodedSparql = encodeURIComponent(sparql);
+
+  formatParameters = '&output=json&stylesheet=xml-to-html.xsl&force-accept=text%2Fplain';
+
+  $.ajax({
+    dataType: "jsonp",
+    url: base_url + encodedSparql + formatParameters,
+    success: function(data) {    
+      var bindings = data.results.bindings;
+      for(rowIdx in bindings){
+        console.log(bindings[rowIdx]);
+      } 
+    }
+  });
+
 });
 
 
