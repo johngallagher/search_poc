@@ -51,9 +51,11 @@ $( document ).ready(function() {
         selectable: true
       };
     },
-
     select: function() {
       this.save({selected: true});
+    },
+    deselect: function() {
+      this.save({selected: false});
     },
     selectedAttribute: function() {
       if (this.get('selected')) {
@@ -72,7 +74,7 @@ $( document ).ready(function() {
         return condition.get('selectable');
       });
     },
-    makeSelectable: function(group) {
+    allowGroup: function(group) {
       this.forEach(function(condition) {
         if(condition.get('group') == group || condition.get('selected')) {
           condition.set('selectable', true);
@@ -81,7 +83,24 @@ $( document ).ready(function() {
         };
         condition.save();
       });
-    }
+    },
+    select: function(id) {
+      selectedCondition = app.Conditions.findWhere({id: id});
+      selectedCondition.select();
+      if (selectedCondition.get('group') == "Phase") {
+        this.allowGroup("Location");
+      } else if (selectedCondition.get('group') == "Location") {
+        this.allowGroup("Type");
+      } else {
+        this.allowGroup("");
+      }
+    },
+    deselect: function (id) {
+      deselectedCondition = app.Conditions.findWhere({id: id});
+      deselectedCondition.deselect();
+      deselectedGroup = deselectedCondition.get('group');
+      this.allowGroup(deselectedGroup);
+    },
   });
 
   app.Conditions = new ConditionList();
@@ -123,17 +142,12 @@ $( document ).ready(function() {
 
   $('#query').chosen();
   $('#query').on('change', function(evt, params) {
-    // conditionWasSelected = params.selected != null;
-    // if (conditionWasSelected) {
-    //   app.Conditions.select(params.selected);
-    // } else {
-    //   app.Conditions.deselect(params.deselected);
-    // };
-    var selectedId = params.selected;
-    var selectedCondition = app.Conditions.findWhere({id: selectedId});
-    selectedCondition.select();
-    var selectedGroup = selectedCondition.get('group');
-    app.Conditions.makeSelectable("Location");
+    conditionWasSelected = params.selected != null;
+    if (conditionWasSelected) {
+      app.Conditions.select(params.selected);
+    } else {
+      app.Conditions.deselect(params.deselected);
+    };
     app.conditionsGroupView.render();
     $('#query').trigger('chosen:updated');
   });
