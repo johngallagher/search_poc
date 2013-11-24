@@ -30,9 +30,9 @@
 
 <script type="text/template" id="condition-group-template">
 <% _.each( groups, function( thisGroup){  %>
-  <optgroup label='<%= thisGroup[0].group %>'>
+  <optgroup label="<%= thisGroup[0].get('group') %>">
   <% _.each( thisGroup, function( thisItem ){ %>
-    <option value='<%= thisItem.text %>' data-model-id='<%= thisItem.id %>'><%= thisItem.text %></option>
+    <option value="<%= thisItem.get('id') %>" data-model-id="<%= thisItem.get('id') %>"><%= thisItem.get('text') %></option>
     <% }) %>
   </optgroup>
   <% }) %>
@@ -61,13 +61,9 @@ $( document ).ready(function() {
     model: app.Condition,
     localStorage: new Backbone.LocalStorage("conditions-backbone"),
     selectable: function() {
-      var selectable = this.filter(function(condition) {
+      return this.filter(function(condition) {
         return condition.get('selectable');
-      }).map(function(condition) { 
-        return condition.attributes;
       });
-
-      return selectable;
     }
   });
 
@@ -86,7 +82,7 @@ $( document ).ready(function() {
 
     render: function() {
       var selectable = app.Conditions.selectable();
-      var groups = _.groupBy(selectable, 'group');
+      var groups = _.groupBy(selectable, function(object) { return object.get('group') });
       this.el = this.template({groups: groups});
       $('#query').children().remove();
       $('#query').append(this.el);
@@ -102,14 +98,16 @@ $( document ).ready(function() {
     {group: "Location", text: "Southwark"},
     {group: "Location", text: "Blackwell Heath"},
     {group: "Location", text: "Shoreditch"},
-    {group: "Type", text: "Independant", selectable: false},
-    {group: "Type", text: "Private", selectable: false}
+    {group: "Type", text: "Independant"},
+    {group: "Type", text: "Private"}
   ]);
 
   conditionsGroupView.render();
 
   $('#query').chosen();
   $('#query').on('change', function(evt, params) {
+    var selectedId = params.selected;
+    var selectedCondition = app.Conditions.findWhere({id: selectedId});
     console.log("Chosen changed...");
   });
 });
