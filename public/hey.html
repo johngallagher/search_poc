@@ -52,7 +52,8 @@ $( document ).ready(function() {
     defaults: function() {
       return {
         group: null,
-        selected: false
+        selected: false,
+        next: true
       };
     },
 
@@ -86,10 +87,13 @@ $( document ).ready(function() {
 
   new app.ConditionGroupView(); // Start the conditions view
 
-  app.Conditions.create({group: "Location", text: "Southwark"});
-  app.Conditions.create({group: "Location", text: "Blackwell Heath"});
   app.Conditions.create({group: "Phase", text: "Primary"});
   app.Conditions.create({group: "Phase", text: "Secondary"});
+  app.Conditions.create({group: "Location", text: "Southwark"});
+  app.Conditions.create({group: "Location", text: "Blackwell Heath"});
+  app.Conditions.create({group: "Location", text: "Shoreditch"});
+  app.Conditions.create({group: "Type", text: "Independant"});
+  app.Conditions.create({group: "Type", text: "Private"});
 
   $('#query').chosen();
 
