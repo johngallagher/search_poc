@@ -17,7 +17,8 @@
 
   <select id="query" multiple="multiple" name="query[]"></select>
 
-  <div id="results"></div>
+  <div id="results">
+  </div>
 
 
 </body>
@@ -26,7 +27,6 @@
 <script type="text/javascript" src='node_modules/backbone/node_modules/underscore/underscore.js'></script>
 <script type="text/javascript" src='node_modules/backbone/backbone.js'></script>
 <script type="text/javascript" src='node_modules/backbone.localstorage/backbone.localstorage.js'></script>
-<script type="text/javascript" src='hogan-2.0.0.js'></script>
 
 <script type="text/template" id="condition-group-template">
 <% _.each( groups, function( thisGroup){  %>
@@ -48,7 +48,7 @@ $( document ).ready(function() {
       return {
         group: null,
         selected: false,
-        next: true
+        selectable: true
       };
     },
 
@@ -60,6 +60,15 @@ $( document ).ready(function() {
   var ConditionList = Backbone.Collection.extend({
     model: app.Condition,
     localStorage: new Backbone.LocalStorage("conditions-backbone"),
+    selectable: function() {
+      var selectable = this.filter(function(condition) {
+        return condition.get('selectable');
+      }).map(function(condition) { 
+        return condition.attributes;
+      });
+
+      return selectable;
+    }
   });
 
   app.Conditions = new ConditionList();
@@ -76,7 +85,8 @@ $( document ).ready(function() {
     },
 
     render: function() {
-      var groups = _.groupBy(app.Conditions.toJSON(), 'group');
+      var selectable = app.Conditions.selectable();
+      var groups = _.groupBy(selectable, 'group');
       this.el = this.template({groups: groups});
       $('#query').children().remove();
       $('#query').append(this.el);
@@ -92,13 +102,11 @@ $( document ).ready(function() {
     {group: "Location", text: "Southwark"},
     {group: "Location", text: "Blackwell Heath"},
     {group: "Location", text: "Shoreditch"},
-    {group: "Type", text: "Independant"},
-    {group: "Type", text: "Private"}
+    {group: "Type", text: "Independant", selectable: false},
+    {group: "Type", text: "Private", selectable: false}
   ]);
 
   conditionsGroupView.render();
-
-
 
   $('#query').chosen();
   $('#query').on('change', function(evt, params) {
