@@ -38,15 +38,33 @@
   </optgroup>
   <% }) %>
 </script>
+
 <script type="text/template" id="selected-conditions-template">
 <h3>Selected Criteria</h3>
 <% _.each( conditions, function( thisCondition){  %>
   <div><span><%= thisCondition.get('group') %></span> - <span><%= thisCondition.get('text') %></span></div>
   <% }) %>
 </script>
-<script type="text/javascript">
 
+<script type="text/template" id="results-template">
+<h3>Results</h3>
+<% _.each( schools, function( thisSchool){  %>
+  <div>
+  <a href="<%= thisSchool.get('item') %>"><%= thisSchool.get('name') %></a>
+  </div>
+  <% }) %>
+</script>
+
+<script type="text/javascript">
 $( document ).ready(function() {
+
+  // Config
+  var paramTemplate = urltemplate.parse(' ?___{key} rdfs:label "{value}" . ?item {namespace}:{key} ?___{key} .');
+  var prefixes = 'PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> PREFIX school: <http://education.data.gov.uk/def/school/>';
+  var select = ' SELECT ?name ?item';
+  var where  = ' WHERE { ?item rdf:type school:School . ?item rdfs:label ?name .';
+  var limit  = ' } OFFSET 0 LIMIT 10';
+  var base_url = 'http://education.data.gov.uk/sparql/education/query?query=';
 
   var app = app || {};
 
@@ -114,48 +132,79 @@ $( document ).ready(function() {
     },
   });
 
-app.Conditions = new ConditionList();
+  app.Conditions = new ConditionList();
 
-app.ConditionGroupView = Backbone.View.extend({
-  template: _.template($("#condition-group-template").html()),
+  app.ConditionGroupView = Backbone.View.extend({
+    template: _.template($("#condition-group-template").html()),
 
-  initialize: function () {
-    this.listenTo(app.Conditions, 'add', this.add);
-  },
+    initialize: function () {
+      this.listenTo(app.Conditions, 'add', this.add);
+    },
 
-  add: function(condition) {
-    condition.save();
-  },
+    add: function(condition) {
+      condition.save();
+    },
 
-  render: function() {
-    var selectable = app.Conditions.selectable();
-    var groups = _.groupBy(selectable, function(object) { return object.get('group') });
-    this.el = this.template({groups: groups});
-    $('#query').children().remove();
-    $('#query').append(this.el);
-    return this;
-  },
-});
+    render: function() {
+      var selectable = app.Conditions.selectable();
+      var groups = _.groupBy(selectable, function(object) { return object.get('group') });
+      this.el = this.template({groups: groups});
+      $('#query').children().remove();
+      $('#query').append(this.el);
+      return this;
+    },
+  });
 
-app.SelectedConditionsGroupView = Backbone.View.extend({
-  template: _.template($("#selected-conditions-template").html()),
-  render: function() {
-    selectedConditions = app.Conditions.where({selected: true});
-    $('#results').html(this.template({conditions: selectedConditions}));
-  },
-});
+  app.SelectedConditionsGroupView = Backbone.View.extend({
+    template: _.template($("#selected-conditions-template").html()),
+    conditions: function() {
+      return app.Conditions.where({selected: true});
+    },
+    render: function() {
+      $('#results').html(this.template({conditions: this.conditions}));
+    },
+  });
+
+  var SchoolList = Backbone.Collection.extend({
+    url: function() {
+      encodedPrefixes = encodeURIComponent(prefixes)
+      encodedSelect   = encodeURIComponent(select)
+      encodedWhere    = encodeURIComponent(where);
+      encodedLimit    = encodeURIComponent(limit);
+      encodedPhase    = paramTemplate.expand({key: "phaseOfEducation", namespace: "school", value: "Primary"});
+      encodedFormat   = '&output=json&stylesheet=xml-to-html.xsl&force-accept=text%2Fplain';
+
+      return base_url + encodedPrefixes + encodedSelect + encodedWhere + encodedPhase + encodedLimit + encodedFormat;
+    },
+    parse: function (raw_response) {
+      console.log("just parsed");
+      data = raw_response.results.bindings.map(function(result) { 
+        return {"item":result.item.value, "name":result.name.value}; 
+      });
+      return data;
+    }
+  });
+  app.schools = new SchoolList();
+
+  ResultsView = Backbone.View.extend({
+    template: _.template($('#results-template').html()),
+    render: function() {
+      $('#results').html(this.template({schools: app.schools.toArray()}));
+    }
+  })
 
   app.conditionsGroupView = new app.ConditionGroupView(); // Start the conditions view
   app.selectedConditionsView = new app.SelectedConditionsGroupView();
+  app.resultsView = new ResultsView();
 
   app.Conditions.add([
-    {group: "Phase", text: "Primary"},
-    {group: "Phase", text: "Secondary"},
-    {group: "Location", text: "Southwark"},
-    {group: "Location", text: "Blackwell Heath"},
-    {group: "Location", text: "Shoreditch"},
-    {group: "Type", text: "Independant"},
-    {group: "Type", text: "Private"}
+    {parameter: "phaseOfEducation", group: "Phase", text: "Primary"},
+    {parameter: "phaseOfEducation", group: "Phase", text: "Secondary"},
+    {parameter: "location", group: "Location", text: "Southwark"},
+    {parameter: "location", group: "Location", text: "Blackwell Heath"},
+    {parameter: "location", group: "Location", text: "Shoreditch"},
+    {parameter: "type", group: "Type", text: "Independent"},
+    {parameter: "type", group: "Type", text: "Private"}
     ]);
 
   app.conditionsGroupView.render();
@@ -173,35 +222,19 @@ app.SelectedConditionsGroupView = Backbone.View.extend({
     $('#query').trigger('chosen:updated');
   });
 
-  var paramTemplate = urltemplate.parse(' ?___{key} rdfs:label "{value}" . ?item {namespace}:{key} ?___{key} .');
-
-  prefixes = 'PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> PREFIX school: <http://education.data.gov.uk/def/school/>';
-  select = ' SELECT ?name ?item';
-  where  = ' WHERE { ?item rdf:type school:School . ?item rdfs:label ?name .';
-  limit  = ' } OFFSET 0 LIMIT 10';
-
-  base_url = 'http://education.data.gov.uk/sparql/education/query?query=';
-
-  encodedPrefixes = encodeURIComponent(prefixes)
-  encodedSelect   = encodeURIComponent(select)
-  encodedWhere    = encodeURIComponent(where);
-  encodedLimit    = encodeURIComponent(limit);
-  encodedPhase    = paramTemplate.expand({key: "phaseOfEducation", namespace: "school", value: "Primary"});
-  encodedFormat   = '&output=json&stylesheet=xml-to-html.xsl&force-accept=text%2Fplain';
-
-  url = base_url + encodedPrefixes + encodedSelect + encodedWhere + encodedPhase + encodedLimit + encodedFormat,
-
-  $.ajax({
+  app.schools.fetch({ 
     dataType: "jsonp",
-    url: url,
-    success: function(data) {    
-      var bindings = data.results.bindings;
-      for(rowIdx in bindings){
-        console.log(bindings[rowIdx]);
-      } 
-    }
+    success: (function(data) {
+      console.log("Success");
+      app.resultsView.render();
+    }),
+    error: (function(data) {
+      console.log("Error");
+    }),
+    complete: (function(data) {
+      console.log("Complete");
+    })
   });
-
 });
 
 
