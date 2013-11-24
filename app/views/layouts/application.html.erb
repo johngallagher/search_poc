@@ -48,12 +48,17 @@ $( document ).ready(function() {
     },
   });
 
-  app.Conditions = Backbone.Collection.extend({
+  var ConditionList = Backbone.Collection.extend({
     model: app.Condition,
     localStorage: new Backbone.LocalStorage("conditions-backbone"),
   });
 
+  app.Conditions = new ConditionList();
+
   app.ConditionsView = Backbone.View.extend({
+    initialize: function () {
+      this.listenTo(app.Conditions, 'add', this.addOne);
+    },
     addOne: function (condition) {
       var view = new app.ConditionView({ model: condition });
       $('#query optgroup').append(view.render().el);
@@ -63,13 +68,10 @@ $( document ).ready(function() {
     },
   });
 
+  new app.ConditionsView(); // Start the conditions view
 
-  conditions = new app.Conditions;
-  conditionsView = new app.ConditionsView;
-  conditionsView.listenTo(conditions, 'add', conditionsView.addOne);
-
-  conditions.create({text: "Wow"});
-  conditions.create({text: "Hey"});
+  app.Conditions.create({text: "Southwark"});
+  app.Conditions.create({text: "Blackwell Heath"});
 
   $('#query').chosen();
 
