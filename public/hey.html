@@ -61,16 +61,6 @@ $( document ).ready(function() {
     }
   });
 
-  app.ConditionView = Backbone.View.extend({
-    tagName: "option",
-
-    render: function() {
-      this.$el.attr("value", this.model.get('text'));
-      this.$el.html(this.model.get('text'));
-      return this;
-    },
-  });
-
   var ConditionList = Backbone.Collection.extend({
     model: app.Condition,
     localStorage: new Backbone.LocalStorage("conditions-backbone"),
