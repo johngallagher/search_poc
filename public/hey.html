@@ -37,7 +37,7 @@
 <% _.each( groups, function( thisGroup){  %>
   <optgroup label='<%= thisGroup[0].group %>'>
   <% _.each( thisGroup, function( thisItem ){ %>
-    <option value='<%= thisItem.text %>'><%= thisItem.text %></option>
+    <option value='<%= thisItem.text %>' data-model-id='<%= thisItem.id %>'><%= thisItem.text %></option>
   <% }) %>
   </optgroup>
 <% }) %>
@@ -71,16 +71,6 @@ $( document ).ready(function() {
     },
   });
 
-  app.ConditionGroupView = Backbone.View.extend({
-    template: _.template($("#condition-group-template").html()),
-
-    render: function() {
-      var groups = _.groupBy(app.Conditions.toJSON(), 'group');
-      this.el = this.template({groups: groups});
-      return this;
-    },
-  });
-
   var ConditionList = Backbone.Collection.extend({
     model: app.Condition,
     localStorage: new Backbone.LocalStorage("conditions-backbone"),
@@ -88,22 +78,23 @@ $( document ).ready(function() {
 
   app.Conditions = new ConditionList();
 
-  app.ConditionsView = Backbone.View.extend({
+  app.ConditionGroupView = Backbone.View.extend({
+    template: _.template($("#condition-group-template").html()),
 
     initialize: function () {
-      this.listenTo(app.Conditions, 'add', this.addOne);
+      this.listenTo(app.Conditions, 'sync', this.render);
     },
-    addOne: function (condition) {
-      var view = new app.ConditionGroupView({ model: condition });
-      $('#query').children().remove();
-      $('#query').append(view.render().el);
-    },
+
     render: function() {
+      var groups = _.groupBy(app.Conditions.toJSON(), 'group');
+      this.el = this.template({groups: groups});
+      $('#query').children().remove();
+      $('#query').append(this.el);
       return this;
     },
   });
 
-  new app.ConditionsView(); // Start the conditions view
+  new app.ConditionGroupView(); // Start the conditions view
 
   app.Conditions.create({group: "Location", text: "Southwark"});
   app.Conditions.create({group: "Location", text: "Blackwell Heath"});
