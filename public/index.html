@@ -63,7 +63,7 @@ $( document ).ready(function() {
   var prefixes = 'PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> PREFIX school: <http://education.data.gov.uk/def/school/>';
   var select = ' SELECT ?name ?item';
   var where  = ' WHERE { ?item rdf:type school:School . ?item rdfs:label ?name .';
-  var limit  = ' } OFFSET 0 LIMIT 10';
+  var limit  = ' } OFFSET 0 LIMIT 30';
   var base_url = 'http://education.data.gov.uk/sparql/education/query?query=';
 
   var app = app || {};
@@ -167,14 +167,21 @@ $( document ).ready(function() {
 
   var SchoolList = Backbone.Collection.extend({
     url: function() {
+      selectedConditions = app.Conditions.where({selected: true});
       encodedPrefixes = encodeURIComponent(prefixes)
       encodedSelect   = encodeURIComponent(select)
       encodedWhere    = encodeURIComponent(where);
       encodedLimit    = encodeURIComponent(limit);
-      encodedPhase    = paramTemplate.expand({key: "phaseOfEducation", namespace: "school", value: "Primary"});
+      encodedSearchParameters = selectedConditions.map(function(condition) { 
+        return paramTemplate.expand({
+          key: condition.get('parameter'), 
+          namespace: "school", 
+          value: condition.get('text')
+        });
+      }).join(" ");
       encodedFormat   = '&output=json&stylesheet=xml-to-html.xsl&force-accept=text%2Fplain';
 
-      return base_url + encodedPrefixes + encodedSelect + encodedWhere + encodedPhase + encodedLimit + encodedFormat;
+      return base_url + encodedPrefixes + encodedSelect + encodedWhere + encodedSearchParameters + encodedLimit + encodedFormat;
     },
     parse: function (raw_response) {
       console.log("just parsed");
@@ -182,6 +189,20 @@ $( document ).ready(function() {
         return {"item":result.item.value, "name":result.name.value}; 
       });
       return data;
+    },
+    update: function() {
+      this.fetch({ 
+        dataType: "jsonp",
+        success: (function(data) {
+          app.resultsView.render();
+        }),
+        error: (function(data) {
+          console.log("Error");
+        }),
+        complete: (function(data) {
+          console.log("Complete");
+        })
+      });
     }
   });
   app.schools = new SchoolList();
@@ -200,16 +221,18 @@ $( document ).ready(function() {
   app.Conditions.add([
     {parameter: "phaseOfEducation", group: "Phase", text: "Primary"},
     {parameter: "phaseOfEducation", group: "Phase", text: "Secondary"},
-    {parameter: "location", group: "Location", text: "Southwark"},
-    {parameter: "location", group: "Location", text: "Blackwell Heath"},
-    {parameter: "location", group: "Location", text: "Shoreditch"},
-    {parameter: "type", group: "Type", text: "Independent"},
-    {parameter: "type", group: "Type", text: "Private"}
+    {parameter: "districtAdministrative", group: "Location", text: "Southwark"},
+    {parameter: "districtAdministrative", group: "Location", text: "Wandsworth"},
+    {parameter: "districtAdministrative", group: "Location", text: "Bromley"},
+    {parameter: "typeOfEstablishment", group: "Type", text: "Other Independent School"},
+    {parameter: "typeOfEstablishment", group: "Type", text: "Foundation School"}
     ]);
 
   app.conditionsGroupView.render();
 
   $('#query').chosen();
+  app.schools.update();
+
   $('#query').on('change', function(evt, params) {
     conditionWasSelected = params.selected != null;
     if (conditionWasSelected) {
@@ -218,23 +241,11 @@ $( document ).ready(function() {
       app.Conditions.deselect(params.deselected);
     };
     app.conditionsGroupView.render();
-    app.selectedConditionsView.render();
     $('#query').trigger('chosen:updated');
+    
+    app.schools.update();
   });
 
-  app.schools.fetch({ 
-    dataType: "jsonp",
-    success: (function(data) {
-      console.log("Success");
-      app.resultsView.render();
-    }),
-    error: (function(data) {
-      console.log("Error");
-    }),
-    complete: (function(data) {
-      console.log("Complete");
-    })
-  });
 });
 
 
