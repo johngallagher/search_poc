@@ -22,7 +22,9 @@
 
 $( document ).ready(function() {
 
-  var Condition = Backbone.Model.extend({
+  var app = app || {};
+
+  app.Condition = Backbone.Model.extend({
     defaults: function() {
       return {
         group: null,
@@ -36,92 +38,37 @@ $( document ).ready(function() {
     }
   });
 
-  var Conditions = Backbone.Collection.extend({
-    model: Condition,
+  app.Conditions = Backbone.Collection.extend({
+    model: app.Condition,
     localStorage: new Backbone.LocalStorage("conditions-backbone"),
-
-    initialize: function(models, options) {
-      this.group = options.group;
-    }
   });
 
-  var ConditionGroup = Backbone.Model.extend({
-    // constructor: function() {
-    //   this.conditions = new Conditions(null, {group: this});
-    //   this.conditions.on('change', this.save, this);
-    //   Backbone.Model.apply(this, arguments);
-    // }
-  });
-
-  var ConditionGroupList = Backbone.Collection.extend({
-    model: ConditionGroup,
-    localStorage: new Backbone.LocalStorage("conditiongroups-backbone"),
-
-    nextConditionType: function() {
-      if (this.length == 0) {
-        return "phase";
-
-      } else if (this.length == 1) {
-        return "district";
-
-      } else {
-        return "term";
-      }
-    },
-
-    selectConditionWithText: function(text) {
-      var lastGroup = this.last();
-      var conditionWithText = lastGroup.conditions.findWhere({text: text});
-      conditionWithText.select();
-    }
-  });
-
-  var ConditionView = Backbone.View.extend({
+  app.ConditionView = Backbone.View.extend({
     tagName: "option",
 
-    render: function() {
-      return this.$el.html("This is a test...");
-    },
-  });
-
-  var AppView = Backbone.View.extend({
-    el: $("body"),
-
     initialize: function() {
-      // this.listenTo(ConditionGroups, 'add', this.addOne);
+      this.listenTo(this.collection, "add", this.render);
     },
 
-    addOne: function(condition) {
-      console.log("Added one!");
-      var view = new ConditionView({model: condition});
-      this.$("#query option").append(view.render());
-    }
+    render: function() {
+      this.$el.attr("value", "Southwark");
+      this.$el.html("Southwark");
+      return this;
+    },
   });
 
-  var App = new AppView;
+  conditions = new app.Conditions
+  
+  conditionsView = new app.ConditionView({collection: conditions});
 
-  window.allGroups = new ConditionGroupList;
-
-
-  window.phaseOfEducation = allGroups.create({
-    name: "Phase"
-  });
-
-  window.phaseConditions = new Conditions(null, {group: window.phaseOfEducation});
-  phaseConditions.create({text: "Primary"});
-  phaseConditions.create({text: "Secondary"});
-
-  window.phaseOfEducation.conditions = window.phaseConditions;
+  conditions.create({text: "Anything"});
+  $('#query optgroup').append(conditionsView.render().el);
 
 
   $('#query').chosen();
 
   $('#query').on('change', function(evt, params) {
     console.log("Chosen changed...");
-    allGroups.selectConditionWithText(params.selected);
-
-    // Conditions.remove(Conditions.unselected());
-
   });
 
 
