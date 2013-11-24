@@ -3,26 +3,21 @@
 <head>
   <title>SearchPoc</title>
   <link href="/assets/application.css?body=1" media="all" rel="stylesheet" type="text/css">
-<link href="/assets/chosen.css?body=1" media="all" rel="stylesheet" type="text/css">
-<link href="/assets/home_pages.css?body=1" media="all" rel="stylesheet" type="text/css">
-<link href="/assets/scaffolds.css?body=1" media="all" rel="stylesheet" type="text/css">
+  <link href="/assets/chosen.css?body=1" media="all" rel="stylesheet" type="text/css">
+  <link href="/assets/home_pages.css?body=1" media="all" rel="stylesheet" type="text/css">
+  <link href="/assets/scaffolds.css?body=1" media="all" rel="stylesheet" type="text/css">
   <script src="/assets/home_pages.js?body=1" type="text/javascript"></script><style type="text/css"></style>
-<script src="/assets/application.js?body=1" type="text/javascript"></script>
+  <script src="/assets/application.js?body=1" type="text/javascript"></script>
   <meta content="authenticity_token" name="csrf-param">
-<meta content="JeN23VMeqzt9GSvOwBWhr3Zo+qkV7gg89R7Fd2Qkvpo=" name="csrf-token">
+  <meta content="JeN23VMeqzt9GSvOwBWhr3Zo+qkV7gg89R7Fd2Qkvpo=" name="csrf-token">
 </head>
 <body>
 
-<h1>Search POC</h1>
+  <h1>Search POC</h1>
 
-<select id="query" multiple="multiple" name="query[]" style="{:width=&gt;&quot;100%&quot;}">
-<optgroup label="Phase">
-  <option value="Primary">Primary</option>
-  <option value="Secondary">Secondary</option>
-</optgroup>
-</select>
+  <select id="query" multiple="multiple" name="query[]"></select>
 
-<div id="results"></div>
+  <div id="results"></div>
 
 
 </body>
@@ -38,9 +33,9 @@
   <optgroup label='<%= thisGroup[0].group %>'>
   <% _.each( thisGroup, function( thisItem ){ %>
     <option value='<%= thisItem.text %>' data-model-id='<%= thisItem.id %>'><%= thisItem.text %></option>
-  <% }) %>
+    <% }) %>
   </optgroup>
-<% }) %>
+  <% }) %>
 </script>
 <script type="text/javascript">
 
@@ -73,7 +68,11 @@ $( document ).ready(function() {
     template: _.template($("#condition-group-template").html()),
 
     initialize: function () {
-      this.listenTo(app.Conditions, 'sync', this.render);
+      this.listenTo(app.Conditions, 'add', this.add);
+    },
+
+    add: function(condition) {
+      condition.save();
     },
 
     render: function() {
@@ -85,24 +84,26 @@ $( document ).ready(function() {
     },
   });
 
-  new app.ConditionGroupView(); // Start the conditions view
+  var conditionsGroupView = new app.ConditionGroupView(); // Start the conditions view
 
-  app.Conditions.create({group: "Phase", text: "Primary"});
-  app.Conditions.create({group: "Phase", text: "Secondary"});
-  app.Conditions.create({group: "Location", text: "Southwark"});
-  app.Conditions.create({group: "Location", text: "Blackwell Heath"});
-  app.Conditions.create({group: "Location", text: "Shoreditch"});
-  app.Conditions.create({group: "Type", text: "Independant"});
-  app.Conditions.create({group: "Type", text: "Private"});
+  app.Conditions.add([
+    {group: "Phase", text: "Primary"},
+    {group: "Phase", text: "Secondary"},
+    {group: "Location", text: "Southwark"},
+    {group: "Location", text: "Blackwell Heath"},
+    {group: "Location", text: "Shoreditch"},
+    {group: "Type", text: "Independant"},
+    {group: "Type", text: "Private"}
+  ]);
+
+  conditionsGroupView.render();
+
+
 
   $('#query').chosen();
-
   $('#query').on('change', function(evt, params) {
     console.log("Chosen changed...");
   });
-
-
-
 });
 
 
