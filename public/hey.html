@@ -37,6 +37,12 @@
   </optgroup>
   <% }) %>
 </script>
+<script type="text/template" id="selected-conditions-template">
+<h3>Selected Criteria</h3>
+<% _.each( conditions, function( thisCondition){  %>
+  <div><span><%= thisCondition.get('group') %></span> - <span><%= thisCondition.get('text') %></span></div>
+  <% }) %>
+</script>
 <script type="text/javascript">
 
 $( document ).ready(function() {
@@ -87,12 +93,16 @@ $( document ).ready(function() {
     select: function(id) {
       selectedCondition = app.Conditions.findWhere({id: id});
       selectedCondition.select();
-      if (selectedCondition.get('group') == "Phase") {
-        this.allowGroup("Location");
-      } else if (selectedCondition.get('group') == "Location") {
-        this.allowGroup("Type");
+      selectedGroup = selectedCondition.get('group');
+      this.allowGroup(this.nextGroupAllowed(selectedGroup));
+    },
+    nextGroupAllowed: function(selectedGroup) {
+      if (selectedGroup == "Phase") {
+        return "Location";
+      } else if (selectedGroup == "Location") {
+        return "Type";
       } else {
-        this.allowGroup("");
+        return "";
       }
     },
     deselect: function (id) {
@@ -126,7 +136,16 @@ $( document ).ready(function() {
     },
   });
 
+  app.SelectedConditionsGroupView = Backbone.View.extend({
+    template: _.template($("#selected-conditions-template").html()),
+    render: function() {
+      selectedConditions = app.Conditions.where({selected: true});
+      $('#results').html(this.template({conditions: selectedConditions}));
+    },
+  });
+
   app.conditionsGroupView = new app.ConditionGroupView(); // Start the conditions view
+  app.selectedConditionsView = new app.SelectedConditionsGroupView();
 
   app.Conditions.add([
     {group: "Phase", text: "Primary"},
@@ -149,7 +168,9 @@ $( document ).ready(function() {
       app.Conditions.deselect(params.deselected);
     };
     app.conditionsGroupView.render();
+    app.selectedConditionsView.render();
     $('#query').trigger('chosen:updated');
+
   });
 });
 
