@@ -291,9 +291,7 @@
 .chosen-container-multi .chosen-drop .result-selected {
   color: #ccc;
   cursor: default;
-  height: 0;
-  display: none;
-
+  display: block;
 }
 
 /* @end */
